@@ -1,9 +1,5 @@
-[![NPM](https://img.shields.io/npm/v/perfectkb-yate.svg)](https://www.npmjs.org/package/perfectkb-yate)
-
 # YATE
 
-*YATE* (Yet Another Turtle Editor) is a fork of *YASQE* (Yet Another 
-SPARQL Query Editor) that is part of the the [*YASGUI*](https://github.com/OpenTriply/YASGUI) suite of SPARQL tools.  For more information about *YATE*, its features, 
-and a HOWTO for including it in your own web site, visit https://perfectkb.github.io/yate
+This is a fork fo the YATE (https://github.com/perfectkb/yate) project from perfectkb (https://perfectkb.github.io/yate/)"
 
-Available as an npm module [perfectkb-yate](https://www.npmjs.com/package/perfectkb-yate)
+TQ had a need to support reified statements in the YATE editor, this project updates the grammars for such support.  TQ will do its best to keep up to date with YATE.

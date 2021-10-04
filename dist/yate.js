@@ -1539,7 +1539,7 @@ Trie.prototype = {
 
     module.exports = ClipboardAction;
 });
-},{"select":20}],6:[function(require,module,exports){
+},{"select":23}],6:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(['module', './clipboard-action', 'tiny-emitter', 'good-listener'], factory);
@@ -1747,7 +1747,166 @@ Trie.prototype = {
 
     module.exports = Clipboard;
 });
-},{"./clipboard-action":5,"good-listener":19,"tiny-emitter":33}],7:[function(require,module,exports){
+},{"./clipboard-action":5,"good-listener":22,"tiny-emitter":36}],7:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+// Open simple dialogs on top of an editor. Relies on dialog.css.
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod((function(){try{return require('codemirror')}catch(e){return window.CodeMirror}})());
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  function dialogDiv(cm, template, bottom) {
+    var wrap = cm.getWrapperElement();
+    var dialog;
+    dialog = wrap.appendChild(document.createElement("div"));
+    if (bottom)
+      dialog.className = "CodeMirror-dialog CodeMirror-dialog-bottom";
+    else
+      dialog.className = "CodeMirror-dialog CodeMirror-dialog-top";
+
+    if (typeof template == "string") {
+      dialog.innerHTML = template;
+    } else { // Assuming it's a detached DOM element.
+      dialog.appendChild(template);
+    }
+    return dialog;
+  }
+
+  function closeNotification(cm, newVal) {
+    if (cm.state.currentNotificationClose)
+      cm.state.currentNotificationClose();
+    cm.state.currentNotificationClose = newVal;
+  }
+
+  CodeMirror.defineExtension("openDialog", function(template, callback, options) {
+    if (!options) options = {};
+
+    closeNotification(this, null);
+
+    var dialog = dialogDiv(this, template, options.bottom);
+    var closed = false, me = this;
+    function close(newVal) {
+      if (typeof newVal == 'string') {
+        inp.value = newVal;
+      } else {
+        if (closed) return;
+        closed = true;
+        dialog.parentNode.removeChild(dialog);
+        me.focus();
+
+        if (options.onClose) options.onClose(dialog);
+      }
+    }
+
+    var inp = dialog.getElementsByTagName("input")[0], button;
+    if (inp) {
+      inp.focus();
+
+      if (options.value) {
+        inp.value = options.value;
+        if (options.selectValueOnOpen !== false) {
+          inp.select();
+        }
+      }
+
+      if (options.onInput)
+        CodeMirror.on(inp, "input", function(e) { options.onInput(e, inp.value, close);});
+      if (options.onKeyUp)
+        CodeMirror.on(inp, "keyup", function(e) {options.onKeyUp(e, inp.value, close);});
+
+      CodeMirror.on(inp, "keydown", function(e) {
+        if (options && options.onKeyDown && options.onKeyDown(e, inp.value, close)) { return; }
+        if (e.keyCode == 27 || (options.closeOnEnter !== false && e.keyCode == 13)) {
+          inp.blur();
+          CodeMirror.e_stop(e);
+          close();
+        }
+        if (e.keyCode == 13) callback(inp.value, e);
+      });
+
+      if (options.closeOnBlur !== false) CodeMirror.on(inp, "blur", close);
+    } else if (button = dialog.getElementsByTagName("button")[0]) {
+      CodeMirror.on(button, "click", function() {
+        close();
+        me.focus();
+      });
+
+      if (options.closeOnBlur !== false) CodeMirror.on(button, "blur", close);
+
+      button.focus();
+    }
+    return close;
+  });
+
+  CodeMirror.defineExtension("openConfirm", function(template, callbacks, options) {
+    closeNotification(this, null);
+    var dialog = dialogDiv(this, template, options && options.bottom);
+    var buttons = dialog.getElementsByTagName("button");
+    var closed = false, me = this, blurring = 1;
+    function close() {
+      if (closed) return;
+      closed = true;
+      dialog.parentNode.removeChild(dialog);
+      me.focus();
+    }
+    buttons[0].focus();
+    for (var i = 0; i < buttons.length; ++i) {
+      var b = buttons[i];
+      (function(callback) {
+        CodeMirror.on(b, "click", function(e) {
+          CodeMirror.e_preventDefault(e);
+          close();
+          if (callback) callback(me);
+        });
+      })(callbacks[i]);
+      CodeMirror.on(b, "blur", function() {
+        --blurring;
+        setTimeout(function() { if (blurring <= 0) close(); }, 200);
+      });
+      CodeMirror.on(b, "focus", function() { ++blurring; });
+    }
+  });
+
+  /*
+   * openNotification
+   * Opens a notification, that can be closed with an optional timer
+   * (default 5000ms timer) and always closes on click.
+   *
+   * If a notification is opened while another is opened, it will close the
+   * currently opened one and open the new one immediately.
+   */
+  CodeMirror.defineExtension("openNotification", function(template, options) {
+    closeNotification(this, close);
+    var dialog = dialogDiv(this, template, options && options.bottom);
+    var closed = false, doneTimer;
+    var duration = options && typeof options.duration !== "undefined" ? options.duration : 5000;
+
+    function close() {
+      if (closed) return;
+      closed = true;
+      clearTimeout(doneTimer);
+      dialog.parentNode.removeChild(dialog);
+    }
+
+    CodeMirror.on(dialog, 'click', function(e) {
+      CodeMirror.e_preventDefault(e);
+      close();
+    });
+
+    if (duration)
+      doneTimer = setTimeout(close, duration);
+
+    return close;
+  });
+});
+
+},{"codemirror":undefined}],8:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -1790,7 +1949,7 @@ Trie.prototype = {
   }
 });
 
-},{"codemirror":undefined}],8:[function(require,module,exports){
+},{"codemirror":undefined}],9:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -1912,7 +2071,7 @@ Trie.prototype = {
   });
 });
 
-},{"codemirror":undefined}],9:[function(require,module,exports){
+},{"codemirror":undefined}],10:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -2019,7 +2178,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
 });
 
-},{"codemirror":undefined}],10:[function(require,module,exports){
+},{"codemirror":undefined}],11:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -2171,7 +2330,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   });
 });
 
-},{"codemirror":undefined}],11:[function(require,module,exports){
+},{"codemirror":undefined}],12:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -2319,7 +2478,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   }
 });
 
-},{"./foldcode":10,"codemirror":undefined}],12:[function(require,module,exports){
+},{"./foldcode":11,"codemirror":undefined}],13:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -2503,7 +2662,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   };
 });
 
-},{"codemirror":undefined}],13:[function(require,module,exports){
+},{"codemirror":undefined}],14:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -2943,7 +3102,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   CodeMirror.defineOption("hintOptions", null);
 });
 
-},{"codemirror":undefined}],14:[function(require,module,exports){
+},{"codemirror":undefined}],15:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -3017,7 +3176,309 @@ CodeMirror.runMode = function(string, modespec, callback, options) {
 
 });
 
-},{"codemirror":undefined}],15:[function(require,module,exports){
+},{"codemirror":undefined}],16:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+// Defines jumpToLine command. Uses dialog.js if present.
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod((function(){try{return require('codemirror')}catch(e){return window.CodeMirror}})(), require("../dialog/dialog"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "../dialog/dialog"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  function dialog(cm, text, shortText, deflt, f) {
+    if (cm.openDialog) cm.openDialog(text, f, {value: deflt, selectValueOnOpen: true});
+    else f(prompt(shortText, deflt));
+  }
+
+  var jumpDialog =
+      'Jump to line: <input type="text" style="width: 10em" class="CodeMirror-search-field"/> <span style="color: #888" class="CodeMirror-search-hint">(Use line:column or scroll% syntax)</span>';
+
+  function interpretLine(cm, string) {
+    var num = Number(string)
+    if (/^[-+]/.test(string)) return cm.getCursor().line + num
+    else return num - 1
+  }
+
+  CodeMirror.commands.jumpToLine = function(cm) {
+    var cur = cm.getCursor();
+    dialog(cm, jumpDialog, "Jump to line:", (cur.line + 1) + ":" + cur.ch, function(posStr) {
+      if (!posStr) return;
+
+      var match;
+      if (match = /^\s*([\+\-]?\d+)\s*\:\s*(\d+)\s*$/.exec(posStr)) {
+        cm.setCursor(interpretLine(cm, match[1]), Number(match[2]))
+      } else if (match = /^\s*([\+\-]?\d+(\.\d+)?)\%\s*/.exec(posStr)) {
+        var line = Math.round(cm.lineCount() * Number(match[1]) / 100);
+        if (/^[-+]/.test(match[1])) line = cur.line + line + 1;
+        cm.setCursor(line - 1, cur.ch);
+      } else if (match = /^\s*\:?\s*([\+\-]?\d+)\s*/.exec(posStr)) {
+        cm.setCursor(interpretLine(cm, match[1]), cur.ch);
+      }
+    });
+  };
+
+  CodeMirror.keyMap["default"]["Alt-G"] = "jumpToLine";
+});
+
+},{"../dialog/dialog":7,"codemirror":undefined}],17:[function(require,module,exports){
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+// Define search commands. Depends on dialog.js or another
+// implementation of the openDialog method.
+
+// Replace works a little oddly -- it will do the replace on the next
+// Ctrl-G (or whatever is bound to findNext) press. You prevent a
+// replace by making sure the match is no longer selected when hitting
+// Ctrl-G.
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod((function(){try{return require('codemirror')}catch(e){return window.CodeMirror}})(), require("./searchcursor"), require("../dialog/dialog"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "./searchcursor", "../dialog/dialog"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  function searchOverlay(query, caseInsensitive) {
+    if (typeof query == "string")
+      query = new RegExp(query.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"), caseInsensitive ? "gi" : "g");
+    else if (!query.global)
+      query = new RegExp(query.source, query.ignoreCase ? "gi" : "g");
+
+    return {token: function(stream) {
+      query.lastIndex = stream.pos;
+      var match = query.exec(stream.string);
+      if (match && match.index == stream.pos) {
+        stream.pos += match[0].length || 1;
+        return "searching";
+      } else if (match) {
+        stream.pos = match.index;
+      } else {
+        stream.skipToEnd();
+      }
+    }};
+  }
+
+  function SearchState() {
+    this.posFrom = this.posTo = this.lastQuery = this.query = null;
+    this.overlay = null;
+  }
+
+  function getSearchState(cm) {
+    return cm.state.search || (cm.state.search = new SearchState());
+  }
+
+  function queryCaseInsensitive(query) {
+    return typeof query == "string" && query == query.toLowerCase();
+  }
+
+  function getSearchCursor(cm, query, pos) {
+    // Heuristic: if the query string is all lowercase, do a case insensitive search.
+    return cm.getSearchCursor(query, pos, queryCaseInsensitive(query));
+  }
+
+  function persistentDialog(cm, text, deflt, onEnter, onKeyDown) {
+    cm.openDialog(text, onEnter, {
+      value: deflt,
+      selectValueOnOpen: true,
+      closeOnEnter: false,
+      onClose: function() { clearSearch(cm); },
+      onKeyDown: onKeyDown
+    });
+  }
+
+  function dialog(cm, text, shortText, deflt, f) {
+    if (cm.openDialog) cm.openDialog(text, f, {value: deflt, selectValueOnOpen: true});
+    else f(prompt(shortText, deflt));
+  }
+
+  function confirmDialog(cm, text, shortText, fs) {
+    if (cm.openConfirm) cm.openConfirm(text, fs);
+    else if (confirm(shortText)) fs[0]();
+  }
+
+  function parseString(string) {
+    return string.replace(/\\(.)/g, function(_, ch) {
+      if (ch == "n") return "\n"
+      if (ch == "r") return "\r"
+      return ch
+    })
+  }
+
+  function parseQuery(query) {
+    var isRE = query.match(/^\/(.*)\/([a-z]*)$/);
+    if (isRE) {
+      try { query = new RegExp(isRE[1], isRE[2].indexOf("i") == -1 ? "" : "i"); }
+      catch(e) {} // Not a regular expression after all, do a string search
+    } else {
+      query = parseString(query)
+    }
+    if (typeof query == "string" ? query == "" : query.test(""))
+      query = /x^/;
+    return query;
+  }
+
+  var queryDialog =
+    'Search: <input type="text" style="width: 10em" class="CodeMirror-search-field"/> <span style="color: #888" class="CodeMirror-search-hint">(Use /re/ syntax for regexp search)</span>';
+
+  function startSearch(cm, state, query) {
+    state.queryText = query;
+    state.query = parseQuery(query);
+    cm.removeOverlay(state.overlay, queryCaseInsensitive(state.query));
+    state.overlay = searchOverlay(state.query, queryCaseInsensitive(state.query));
+    cm.addOverlay(state.overlay);
+    if (cm.showMatchesOnScrollbar) {
+      if (state.annotate) { state.annotate.clear(); state.annotate = null; }
+      state.annotate = cm.showMatchesOnScrollbar(state.query, queryCaseInsensitive(state.query));
+    }
+  }
+
+  function doSearch(cm, rev, persistent, immediate) {
+    var state = getSearchState(cm);
+    if (state.query) return findNext(cm, rev);
+    var q = cm.getSelection() || state.lastQuery;
+    if (persistent && cm.openDialog) {
+      var hiding = null
+      var searchNext = function(query, event) {
+        CodeMirror.e_stop(event);
+        if (!query) return;
+        if (query != state.queryText) {
+          startSearch(cm, state, query);
+          state.posFrom = state.posTo = cm.getCursor();
+        }
+        if (hiding) hiding.style.opacity = 1
+        findNext(cm, event.shiftKey, function(_, to) {
+          var dialog
+          if (to.line < 3 && document.querySelector &&
+              (dialog = cm.display.wrapper.querySelector(".CodeMirror-dialog")) &&
+              dialog.getBoundingClientRect().bottom - 4 > cm.cursorCoords(to, "window").top)
+            (hiding = dialog).style.opacity = .4
+        })
+      };
+      persistentDialog(cm, queryDialog, q, searchNext, function(event, query) {
+        var cmd = CodeMirror.keyMap[cm.getOption("keyMap")][CodeMirror.keyName(event)];
+        if (cmd == "findNext" || cmd == "findPrev") {
+          CodeMirror.e_stop(event);
+          startSearch(cm, getSearchState(cm), query);
+          cm.execCommand(cmd);
+        } else if (cmd == "find" || cmd == "findPersistent") {
+          CodeMirror.e_stop(event);
+          searchNext(query, event);
+        }
+      });
+      if (immediate) {
+        startSearch(cm, state, q);
+        findNext(cm, rev);
+      }
+    } else {
+      dialog(cm, queryDialog, "Search for:", q, function(query) {
+        if (query && !state.query) cm.operation(function() {
+          startSearch(cm, state, query);
+          state.posFrom = state.posTo = cm.getCursor();
+          findNext(cm, rev);
+        });
+      });
+    }
+  }
+
+  function findNext(cm, rev, callback) {cm.operation(function() {
+    var state = getSearchState(cm);
+    var cursor = getSearchCursor(cm, state.query, rev ? state.posFrom : state.posTo);
+    if (!cursor.find(rev)) {
+      cursor = getSearchCursor(cm, state.query, rev ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0));
+      if (!cursor.find(rev)) return;
+    }
+    cm.setSelection(cursor.from(), cursor.to());
+    cm.scrollIntoView({from: cursor.from(), to: cursor.to()}, 20);
+    state.posFrom = cursor.from(); state.posTo = cursor.to();
+    if (callback) callback(cursor.from(), cursor.to())
+  });}
+
+  function clearSearch(cm) {cm.operation(function() {
+    var state = getSearchState(cm);
+    state.lastQuery = state.query;
+    if (!state.query) return;
+    state.query = state.queryText = null;
+    cm.removeOverlay(state.overlay);
+    if (state.annotate) { state.annotate.clear(); state.annotate = null; }
+  });}
+
+  var replaceQueryDialog =
+    ' <input type="text" style="width: 10em" class="CodeMirror-search-field"/> <span style="color: #888" class="CodeMirror-search-hint">(Use /re/ syntax for regexp search)</span>';
+  var replacementQueryDialog = 'With: <input type="text" style="width: 10em" class="CodeMirror-search-field"/>';
+  var doReplaceConfirm = "Replace? <button>Yes</button> <button>No</button> <button>All</button> <button>Stop</button>";
+
+  function replaceAll(cm, query, text) {
+    cm.operation(function() {
+      for (var cursor = getSearchCursor(cm, query); cursor.findNext();) {
+        if (typeof query != "string") {
+          var match = cm.getRange(cursor.from(), cursor.to()).match(query);
+          cursor.replace(text.replace(/\$(\d)/g, function(_, i) {return match[i];}));
+        } else cursor.replace(text);
+      }
+    });
+  }
+
+  function replace(cm, all) {
+    if (cm.getOption("readOnly")) return;
+    var query = cm.getSelection() || getSearchState(cm).lastQuery;
+    var dialogText = all ? "Replace all:" : "Replace:"
+    dialog(cm, dialogText + replaceQueryDialog, dialogText, query, function(query) {
+      if (!query) return;
+      query = parseQuery(query);
+      dialog(cm, replacementQueryDialog, "Replace with:", "", function(text) {
+        text = parseString(text)
+        if (all) {
+          replaceAll(cm, query, text)
+        } else {
+          clearSearch(cm);
+          var cursor = getSearchCursor(cm, query, cm.getCursor("from"));
+          var advance = function() {
+            var start = cursor.from(), match;
+            if (!(match = cursor.findNext())) {
+              cursor = getSearchCursor(cm, query);
+              if (!(match = cursor.findNext()) ||
+                  (start && cursor.from().line == start.line && cursor.from().ch == start.ch)) return;
+            }
+            cm.setSelection(cursor.from(), cursor.to());
+            cm.scrollIntoView({from: cursor.from(), to: cursor.to()});
+            confirmDialog(cm, doReplaceConfirm, "Replace?",
+                          [function() {doReplace(match);}, advance,
+                           function() {replaceAll(cm, query, text)}]);
+          };
+          var doReplace = function(match) {
+            cursor.replace(typeof query == "string" ? text :
+                           text.replace(/\$(\d)/g, function(_, i) {return match[i];}));
+            advance();
+          };
+          advance();
+        }
+      });
+    });
+  }
+
+  CodeMirror.commands.find = function(cm) {clearSearch(cm); doSearch(cm);};
+  CodeMirror.commands.findPersistent = function(cm) {clearSearch(cm); doSearch(cm, false, true);};
+  CodeMirror.commands.findPersistentNext = function(cm) {doSearch(cm, false, true, true);};
+  CodeMirror.commands.findPersistentPrev = function(cm) {doSearch(cm, true, true, true);};
+  CodeMirror.commands.findNext = doSearch;
+  CodeMirror.commands.findPrev = function(cm) {doSearch(cm, true);};
+  CodeMirror.commands.clearSearch = clearSearch;
+  CodeMirror.commands.replace = replace;
+  CodeMirror.commands.replaceAll = function(cm) {replace(cm, true);};
+});
+
+},{"../dialog/dialog":7,"./searchcursor":18,"codemirror":undefined}],18:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -3208,7 +3669,7 @@ CodeMirror.runMode = function(string, modespec, callback, options) {
   });
 });
 
-},{"codemirror":undefined}],16:[function(require,module,exports){
+},{"codemirror":undefined}],19:[function(require,module,exports){
 var DOCUMENT_NODE_TYPE = 9;
 
 /**
@@ -3243,7 +3704,7 @@ function closest (element, selector) {
 
 module.exports = closest;
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var closest = require('./closest');
 
 /**
@@ -3323,7 +3784,7 @@ function listener(element, selector, type, callback) {
 
 module.exports = delegate;
 
-},{"./closest":16}],18:[function(require,module,exports){
+},{"./closest":19}],21:[function(require,module,exports){
 /**
  * Check if argument is a HTML element.
  *
@@ -3374,7 +3835,7 @@ exports.fn = function(value) {
     return type === '[object Function]';
 };
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 var is = require('./is');
 var delegate = require('delegate');
 
@@ -3471,7 +3932,7 @@ function listenSelector(selector, type, callback) {
 
 module.exports = listen;
 
-},{"./is":18,"delegate":17}],20:[function(require,module,exports){
+},{"./is":21,"delegate":20}],23:[function(require,module,exports){
 function select(element) {
     var selectedText;
 
@@ -3516,7 +3977,7 @@ function select(element) {
 
 module.exports = select;
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var engine = require('../src/store-engine')
 
 var storages = require('../storages/all')
@@ -3524,7 +3985,7 @@ var plugins = [require('../plugins/json2')]
 
 module.exports = engine.createStore(storages, plugins)
 
-},{"../plugins/json2":22,"../src/store-engine":24,"../storages/all":26}],22:[function(require,module,exports){
+},{"../plugins/json2":25,"../src/store-engine":27,"../storages/all":29}],25:[function(require,module,exports){
 module.exports = json2Plugin
 
 function json2Plugin() {
@@ -3532,7 +3993,7 @@ function json2Plugin() {
 	return {}
 }
 
-},{"./lib/json2":23}],23:[function(require,module,exports){
+},{"./lib/json2":26}],26:[function(require,module,exports){
 /* eslint-disable */
 
 //  json2.js
@@ -4041,7 +4502,7 @@ if (typeof JSON !== "object") {
         };
     }
 }());
-},{}],24:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var util = require('./util')
 var slice = util.slice
 var pluck = util.pluck
@@ -4280,8 +4741,8 @@ function createStore(storages, plugins, namespace) {
 	return store
 }
 
-},{"./util":25}],25:[function(require,module,exports){
-(function (global){
+},{"./util":28}],28:[function(require,module,exports){
+(function (global){(function (){
 var assign = make_assign()
 var create = make_create()
 var trim = make_trim()
@@ -4401,9 +4862,9 @@ function isObject(val) {
 	return val && {}.toString.call(val) === '[object Object]'
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],26:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 module.exports = [
 	// Listed in order of usage preference
 	require('./localStorage'),
@@ -4414,7 +4875,7 @@ module.exports = [
 	require('./memoryStorage')
 ]
 
-},{"./cookieStorage":27,"./localStorage":28,"./memoryStorage":29,"./oldFF-globalStorage":30,"./oldIE-userDataStorage":31,"./sessionStorage":32}],27:[function(require,module,exports){
+},{"./cookieStorage":30,"./localStorage":31,"./memoryStorage":32,"./oldFF-globalStorage":33,"./oldIE-userDataStorage":34,"./sessionStorage":35}],30:[function(require,module,exports){
 // cookieStorage is useful Safari private browser mode, where localStorage
 // doesn't work but cookies do. This implementation is adopted from
 // https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
@@ -4477,7 +4938,7 @@ function _has(key) {
 	return (new RegExp("(?:^|;\\s*)" + escape(key).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(doc.cookie)
 }
 
-},{"../src/util":25}],28:[function(require,module,exports){
+},{"../src/util":28}],31:[function(require,module,exports){
 var util = require('../src/util')
 var Global = util.Global
 
@@ -4517,7 +4978,7 @@ function clearAll() {
 	return localStorage().clear()
 }
 
-},{"../src/util":25}],29:[function(require,module,exports){
+},{"../src/util":28}],32:[function(require,module,exports){
 // memoryStorage is a useful last fallback to ensure that the store
 // is functions (meaning store.get(), store.set(), etc will all function).
 // However, stored values will not persist when the browser navigates to
@@ -4558,7 +5019,7 @@ function clearAll(key) {
 	memoryStorage = {}
 }
 
-},{}],30:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 // oldFF-globalStorage provides storage for Firefox
 // versions 6 and 7, where no localStorage, etc
 // is available.
@@ -4602,7 +5063,7 @@ function clearAll() {
 	})
 }
 
-},{"../src/util":25}],31:[function(require,module,exports){
+},{"../src/util":28}],34:[function(require,module,exports){
 // oldIE-userDataStorage provides storage for Internet Explorer
 // versions 6 and 7, where no localStorage, sessionStorage, etc
 // is available.
@@ -4731,7 +5192,7 @@ function _makeIEStorageElFunction() {
 	}
 }
 
-},{"../src/util":25}],32:[function(require,module,exports){
+},{"../src/util":28}],35:[function(require,module,exports){
 var util = require('../src/util')
 var Global = util.Global
 
@@ -4771,7 +5232,7 @@ function clearAll() {
 	return sessionStorage().clear()
 }
 
-},{"../src/util":25}],33:[function(require,module,exports){
+},{"../src/util":28}],36:[function(require,module,exports){
 function E () {
   // Keep this empty so it's easier to inherit from
   // (via https://github.com/lipsmack from https://github.com/scottcorgan/tiny-emitter/issues/3)
@@ -4840,97 +5301,40 @@ E.prototype = {
 module.exports = E;
 module.exports.TinyEmitter = E;
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 module.exports={
-  "_args": [
-    [
-      {
-        "raw": "yasgui-utils@^1.6.7",
-        "scope": null,
-        "escapedName": "yasgui-utils",
-        "name": "yasgui-utils",
-        "rawSpec": "^1.6.7",
-        "spec": ">=1.6.7 <2.0.0",
-        "type": "range"
-      },
-      "/home/node/app"
-    ]
-  ],
-  "_from": "yasgui-utils@>=1.6.7 <2.0.0",
-  "_id": "yasgui-utils@1.6.7",
-  "_inCache": true,
-  "_location": "/yasgui-utils",
-  "_nodeVersion": "7.10.0",
-  "_npmOperationalInternal": {
-    "host": "s3://npm-registry-packages",
-    "tmp": "tmp/yasgui-utils-1.6.7.tgz_1495459781202_0.06725964159704745"
-  },
-  "_npmUser": {
-    "name": "laurens.rietveld",
-    "email": "laurens.rietveld@gmail.com"
-  },
-  "_npmVersion": "4.2.0",
-  "_phantomChildren": {},
-  "_requested": {
-    "raw": "yasgui-utils@^1.6.7",
-    "scope": null,
-    "escapedName": "yasgui-utils",
-    "name": "yasgui-utils",
-    "rawSpec": "^1.6.7",
-    "spec": ">=1.6.7 <2.0.0",
-    "type": "range"
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": "https://registry.npmjs.org/yasgui-utils/-/yasgui-utils-1.6.7.tgz",
-  "_shasum": "2bcfc5a315688de3ae6057883d9ae342b205f267",
-  "_shrinkwrap": null,
-  "_spec": "yasgui-utils@^1.6.7",
-  "_where": "/home/node/app",
-  "author": {
-    "name": "Laurens Rietveld"
-  },
-  "bugs": {
-    "url": "https://github.com/YASGUI/Utils/issues"
-  },
-  "dependencies": {
-    "store": "^2.0.4"
-  },
+  "name": "yasgui-utils",
+  "version": "1.6.7",
   "description": "Utils for YASGUI libs",
-  "devDependencies": {},
-  "directories": {},
-  "dist": {
-    "shasum": "2bcfc5a315688de3ae6057883d9ae342b205f267",
-    "tarball": "https://registry.npmjs.org/yasgui-utils/-/yasgui-utils-1.6.7.tgz"
+  "main": "src/main.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/YASGUI/Utils.git"
   },
-  "gitHead": "6031b1cb732d390b29cd5376dceb9a9d665bbd11",
-  "homepage": "https://github.com/YASGUI/Utils",
   "licenses": [
     {
       "type": "MIT",
       "url": "http://yasgui.github.io/license.txt"
     }
   ],
-  "main": "src/main.js",
+  "author": "Laurens Rietveld",
   "maintainers": [
     {
-      "name": "laurens.rietveld",
-      "email": "laurens.rietveld@gmail.com"
+      "name": "Laurens Rietveld",
+      "email": "laurens.rietveld@gmail.com",
+      "web": "http://laurensrietveld.nl"
     }
   ],
-  "name": "yasgui-utils",
-  "optionalDependencies": {},
-  "readme": "ERROR: No README data found!",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/YASGUI/Utils.git"
+  "bugs": {
+    "url": "https://github.com/YASGUI/Utils/issues"
   },
-  "scripts": {},
-  "version": "1.6.7"
+  "homepage": "https://github.com/YASGUI/Utils",
+  "dependencies": {
+    "store": "^2.0.4"
+  }
 }
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 window.console = window.console || {"log":function(){}};//make sure any console statements don't break IE
 module.exports = {
 	storage: require("./storage.js"),
@@ -4951,7 +5355,7 @@ module.exports = {
 	}
 };
 
-},{"../package.json":34,"./storage.js":36,"./svg.js":37}],36:[function(require,module,exports){
+},{"../package.json":37,"./storage.js":39,"./svg.js":40}],39:[function(require,module,exports){
 var store = require("store");
 var times = {
   day: function() {
@@ -5042,7 +5446,7 @@ var root = (module.exports = {
   }
 });
 
-},{"store":21}],37:[function(require,module,exports){
+},{"store":24}],40:[function(require,module,exports){
 module.exports = {
 	draw: function(parent, svgString) {
 		if (!parent) return;
@@ -5071,15 +5475,18 @@ module.exports = {
 		return false;
 	}
 };
-},{}],38:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 module.exports={
-  "name": "perfectkb-yate",
-  "description": "Yet Another Turtle Editor, forked from YASQE",
-  "version": "0.9.2",
+  "name": "TQ-yate",
+  "description": "TQ-yate - forked from YATE",
+  "version": "0.10.0",
   "main": "src/main.js",
   "license": "MIT",
-  "author": "Maxime Lefrançois",
-  "homepage": "https://perfectkb.github.io/yate",
+  "author": {
+      "name": "Patrick Doyle",
+      "email": "pdoyle@topquadrant.com",
+      "web": "http://www.topquadrant.com"
+    },
   "scripts": {
     "dev": "gulp serve",
     "build": "gulp",
@@ -5090,11 +5497,11 @@ module.exports={
   },
   "devDependencies": {
     "bootstrap-sass": "^3.3.7",
-    "browserify": "^13.1.0",
+    "browserify": "^16.5.0",
     "browserify-shim": "^3.8.12",
     "browserify-transform-tools": "^1.6.0",
     "exorcist": "^0.4.0",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.0",
     "gulp-autoprefixer": "^3.1.0",
     "gulp-bump": "^2.2.0",
     "gulp-concat": "^2.6.0",
@@ -5105,23 +5512,23 @@ module.exports={
     "gulp-filter": "^4.0.0",
     "gulp-git": "^2.4.1",
     "gulp-jsvalidate": "^2.1.0",
-    "gulp-livereload": "^3.8.1",
+    "gulp-livereload": "^4.0.2",
     "gulp-notify": "^2.2.0",
     "gulp-rename": "^1.2.2",
-    "gulp-sass": "^2.3.2",
+    "gulp-sass": "^4.0.2",
     "gulp-sourcemaps": "^1.6.0",
     "gulp-streamify": "1.0.2",
     "gulp-tag-version": "^1.3.0",
     "gulp-uglify": "^1.5.4",
-    "node-sass": "^3.8.0",
+    "node-sass": "^4.13.0",
     "require-dir": "^0.3.2",
     "run-sequence": "^1.2.2",
-    "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "~1.1.0",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "2.0.0",
     "vinyl-transform": "1.0.0",
     "watchify": "^3.7.0"
   },
-  "bugs": "https://github.com/perfectkb/yate/pulls",
+  "bugs": "https://github.com/TopQuadrant/yate/pulls",
   "keywords": [
     "JavaScript",
     "Turtle",
@@ -5130,6 +5537,17 @@ module.exports={
     "Linked Data"
   ],
   "maintainers": [
+   {
+     "name" : "Patrick Doyle",
+     "email": "pdoyle@topquadrant.com"
+   }
+  ],
+  "contributors": [
+    {
+      "name": "Pablo Menéndez",
+      "email": "pabloyo97@hotmail.com",
+      "web": "https://mistermboy.github.io/"
+    },
     {
       "name": "Laurens Rietveld",
       "email": "laurens.rietveld@gmail.com",
@@ -5143,7 +5561,7 @@ module.exports={
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/perfectkb/yate.git"
+    "url": "https://github.com/TopQuadrant/yate.git"
   },
   "dependencies": {
     "clipboard": "^1.7.1",
@@ -5168,7 +5586,7 @@ module.exports={
   }
 }
 
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})(),
   utils = require("../utils.js"),
@@ -5440,7 +5858,7 @@ var selectHint = function(yate, data, completion) {
 //	loadBulkCompletions: loadBulkCompletions,
 //};
 
-},{"../../lib/trie.js":4,"../main.js":48,"../utils.js":53,"jquery":undefined,"yasgui-utils":35}],40:[function(require,module,exports){
+},{"../../lib/trie.js":4,"../main.js":51,"../utils.js":56,"jquery":undefined,"yasgui-utils":38}],43:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})();
 module.exports = function(yate, name) {
@@ -5486,7 +5904,7 @@ module.exports.postProcessToken = function(yate, token, suggestedString) {
   return require("./utils.js").postprocessResourceTokenForCompletion(yate, token, suggestedString);
 };
 
-},{"./utils":43,"./utils.js":43,"jquery":undefined}],41:[function(require,module,exports){
+},{"./utils":46,"./utils.js":46,"jquery":undefined}],44:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})();
 //this is a mapping from the class names (generic ones, for compatability with codemirror themes), to what they -actually- represent
@@ -5555,7 +5973,7 @@ module.exports.isValidCompletionPosition = function(yate) {
   // there should be no trailing text (otherwise, text is wrongly inserted
   // in between)
   var previousToken = yate.getPreviousNonWsToken(cur.line, token);
-  if (!previousToken || previousToken.string.toUpperCase() != "PREFIX" || previousToken.string.toUpperCase() != "@PREFIX") return false;
+  if (!previousToken || (previousToken.string.toUpperCase() != "PREFIX" && previousToken.string.toUpperCase() != "@PREFIX")) return false;
   return true;
 };
 module.exports.preprocessPrefixTokenForCompletion = function(yate, token) {
@@ -5614,7 +6032,7 @@ module.exports.appendPrefixIfNeeded = function(yate, completerName) {
 module.exports.fetchFrom = (window.location.protocol.indexOf("http") === 0 ? "//" : "http://") +
   "prefix.cc/popular/all.file.json";
 
-},{"jquery":undefined}],42:[function(require,module,exports){
+},{"jquery":undefined}],45:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})();
 module.exports = function(yate, name) {
@@ -5665,7 +6083,7 @@ module.exports.postProcessToken = function(yate, token, suggestedString) {
   return require("./utils.js").postprocessResourceTokenForCompletion(yate, token, suggestedString);
 };
 
-},{"./utils":43,"./utils.js":43,"jquery":undefined}],43:[function(require,module,exports){
+},{"./utils":46,"./utils.js":46,"jquery":undefined}],46:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})(), utils = require("./utils.js"), yutils = require("yasgui-utils");
 /**
@@ -5785,7 +6203,7 @@ module.exports = {
   postprocessResourceTokenForCompletion: postprocessResourceTokenForCompletion
 };
 
-},{"../imgs.js":47,"./utils.js":43,"jquery":undefined,"yasgui-utils":35}],44:[function(require,module,exports){
+},{"../imgs.js":50,"./utils.js":46,"jquery":undefined,"yasgui-utils":38}],47:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})();
 module.exports = function(yate) {
@@ -5841,7 +6259,7 @@ module.exports = function(yate) {
   };
 };
 
-},{"jquery":undefined}],45:[function(require,module,exports){
+},{"jquery":undefined}],48:[function(require,module,exports){
 /**
  * The default options of YATE (check the CodeMirror documentation for even
  * more options, such as disabling line numbers, or changing keyboard shortcut
@@ -5945,13 +6363,13 @@ YATE.defaults = $.extend(true, {}, YATE.defaults, {
 
 });
 
-},{"./main.js":48,"jquery":undefined}],46:[function(require,module,exports){
+},{"./main.js":51,"jquery":undefined}],49:[function(require,module,exports){
 //this is the entry-point for browserify.
 //the current browserify version does not support require-ing js files which are used as entry-point
 //this way, we can still require our main.js file
 module.exports = require("./main.js");
 
-},{"./main.js":48}],47:[function(require,module,exports){
+},{"./main.js":51}],50:[function(require,module,exports){
 "use strict";
 module.exports = {
   copy: '<svg xmlns="http://www.w3.org/2000/svg" baseProfile="tiny" viewBox="0 0 100 100"><path d="M13.56190607413896,81.37143644483376 h27.12381214827792 v6.78095303706948 H13.56190607413896 v-6.78095303706948 zm33.9047651853474,-40.68571822241688 H13.56190607413896 v6.78095303706948 h33.9047651853474 v-6.78095303706948 zm13.56190607413896,20.34285911120844 V47.46667125948636 L40.68571822241688,67.8095303706948 l20.34285911120844,20.34285911120844 V74.59048340776428 h33.9047651853474 V61.02857733362532 H61.02857733362532 zm-30.51428866681266,-6.78095303706948 H13.56190607413896 v6.78095303706948 h16.9523825926737 v-6.78095303706948 zM13.56190607413896,74.59048340776428 h16.9523825926737 v-6.78095303706948 H13.56190607413896 v6.78095303706948 zm61.02857733362532,6.78095303706948 h6.78095303706948 v13.56190607413896 c-0.10595239120421063,1.9071430416757913 -0.7416667384294744,3.4964289097389507 -2.013095432880002,4.767857604189478 s-2.860714562513687,1.9071430416757913 -4.767857604189478,2.013095432880002 H6.78095303706948 c-3.708333692147372,0 -6.78095303706948,-3.072619344922108 -6.78095303706948,-6.78095303706948 V20.34285911120844 c0,-3.708333692147372 3.072619344922108,-6.78095303706948 6.78095303706948,-6.78095303706948 h20.34285911120844 C27.12381214827792,6.039286298640006 33.16309844691793,0 40.68571822241688,0 s13.56190607413896,6.039286298640006 13.56190607413896,13.56190607413896 h20.34285911120844 c3.708333692147372,0 6.78095303706948,3.072619344922108 6.78095303706948,6.78095303706948 v33.9047651853474 h-6.78095303706948 V33.9047651853474 H6.78095303706948 v61.02857733362532 h67.8095303706948 V81.37143644483376 zM13.56190607413896,27.12381214827792 h54.24762429655584 c0,-3.708333692147372 -3.072619344922108,-6.78095303706948 -6.78095303706948,-6.78095303706948 h-6.78095303706948 c-3.708333692147372,0 -6.78095303706948,-3.072619344922108 -6.78095303706948,-6.78095303706948 s-3.072619344922108,-6.78095303706948 -6.78095303706948,-6.78095303706948 s-6.78095303706948,3.072619344922108 -6.78095303706948,6.78095303706948 s-3.072619344922108,6.78095303706948 -6.78095303706948,6.78095303706948 h-6.78095303706948 c-3.708333692147372,0 -6.78095303706948,3.072619344922108 -6.78095303706948,6.78095303706948 z" id="svg_1" class=""/></svg>',
@@ -5962,7 +6380,7 @@ module.exports = {
   smallscreen: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 -10 100 100"><path d="M43.89 28.89V-10L27.22 6.667 10.555-10 5-4.445l16.667 16.667L5 28.89h38.89zM66.11 28.89V-10L82.78 6.667 99.444-10 105-4.445 88.334 12.222 105 28.89H66.11zM43.89 51.11V90L27.22 73.334 10.555 90 5 84.444l16.667-16.666L5 51.11h38.89zM66.11 51.11V90L82.78 73.334 99.444 90 105 84.444 88.334 67.778 105 51.11H66.11z" fill="#010101"/></svg>'
 };
 
-},{}],48:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 "use strict";
 //make sure any console statements
 window.console = window.console || {
@@ -5991,6 +6409,9 @@ require("codemirror/addon/edit/matchbrackets.js");
 require("codemirror/addon/runmode/runmode.js");
 require("codemirror/addon/display/fullscreen.js");
 require("../lib/grammar/tokenizer.js");
+require('codemirror/addon/search/search.js');
+require('codemirror/addon/search/jump-to-line.js');
+require('codemirror/addon/dialog/dialog.js');
 
 /**
  * Main YATE constructor. Pass a DOM element as argument to append the editor to, and (optionally) pass along config settings (see the YATE.defaults object below, as well as the regular CodeMirror documentation, for more information on configurability)
@@ -6713,7 +7134,7 @@ root.version = {
 };
 
 
-},{"../lib/deparam.js":1,"../lib/grammar/tokenizer.js":3,"../package.json":38,"./autocompleters/autocompleterBase.js":39,"./autocompleters/classes.js":40,"./autocompleters/prefixes.js":41,"./autocompleters/properties.js":42,"./autocompleters/variables.js":44,"./defaults.js":45,"./imgs.js":47,"./prefixFold.js":49,"./prefixUtils.js":50,"./tokenUtils.js":51,"./tooltip":52,"./utils.js":53,"clipboard":6,"codemirror":undefined,"codemirror/addon/display/fullscreen.js":7,"codemirror/addon/edit/matchbrackets.js":8,"codemirror/addon/fold/brace-fold.js":9,"codemirror/addon/fold/foldcode.js":10,"codemirror/addon/fold/foldgutter.js":11,"codemirror/addon/fold/xml-fold.js":12,"codemirror/addon/hint/show-hint.js":13,"codemirror/addon/runmode/runmode.js":14,"codemirror/addon/search/searchcursor.js":15,"jquery":undefined,"yasgui-utils":35}],49:[function(require,module,exports){
+},{"../lib/deparam.js":1,"../lib/grammar/tokenizer.js":3,"../package.json":41,"./autocompleters/autocompleterBase.js":42,"./autocompleters/classes.js":43,"./autocompleters/prefixes.js":44,"./autocompleters/properties.js":45,"./autocompleters/variables.js":47,"./defaults.js":48,"./imgs.js":50,"./prefixFold.js":52,"./prefixUtils.js":53,"./tokenUtils.js":54,"./tooltip":55,"./utils.js":56,"clipboard":6,"codemirror":undefined,"codemirror/addon/dialog/dialog.js":7,"codemirror/addon/display/fullscreen.js":8,"codemirror/addon/edit/matchbrackets.js":9,"codemirror/addon/fold/brace-fold.js":10,"codemirror/addon/fold/foldcode.js":11,"codemirror/addon/fold/foldgutter.js":12,"codemirror/addon/fold/xml-fold.js":13,"codemirror/addon/hint/show-hint.js":14,"codemirror/addon/runmode/runmode.js":15,"codemirror/addon/search/jump-to-line.js":16,"codemirror/addon/search/search.js":17,"codemirror/addon/search/searchcursor.js":18,"jquery":undefined,"yasgui-utils":38}],52:[function(require,module,exports){
 var CodeMirror = (function(){try{return require('codemirror')}catch(e){return window.CodeMirror}})(), tokenUtils = require("./tokenUtils.js");
 
 ("use strict");
@@ -6832,7 +7253,7 @@ CodeMirror.registerHelper("fold", "prefix", function(cm, start) {
   };
 });
 
-},{"./tokenUtils.js":51,"codemirror":undefined}],50:[function(require,module,exports){
+},{"./tokenUtils.js":54,"codemirror":undefined}],53:[function(require,module,exports){
 "use strict";
 /**
  * Append prefix declaration to list of prefixes in document window.
@@ -6956,7 +7377,7 @@ module.exports = {
   removePrefixes: removePrefixes
 };
 
-},{}],51:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 "use strict";
 /**
  * When typing a document, this document is sometimes syntactically invalid, causing
@@ -7029,7 +7450,7 @@ module.exports = {
   getNextNonWsToken: getNextNonWsToken
 };
 
-},{}],52:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})(), utils = require("./utils.js");
 
@@ -7065,7 +7486,7 @@ module.exports = function(yate, parent, html) {
   };
 };
 
-},{"./utils.js":53,"jquery":undefined}],53:[function(require,module,exports){
+},{"./utils.js":56,"jquery":undefined}],56:[function(require,module,exports){
 "use strict";
 var $ = (function(){try{return require('jquery')}catch(e){return window.jQuery}})();
 
@@ -7126,6 +7547,6 @@ module.exports = {
   getString: getString
 };
 
-},{"jquery":undefined}]},{},[46])(46)
+},{"jquery":undefined}]},{},[49])(49)
 });
 //# sourceMappingURL=yate.js.map

@@ -1,15 +1,14 @@
 {
-  "name": "perfectkb-yate",
-  "description": "Yet Another Turtle Editor, forked from YASQE",
+  "name": "TQ-yate",
+  "description": "TQ-yate - forked from YATE",
   "version": "0.10.0",
   "main": "src/main.js",
   "license": "MIT",
   "author": {
-      "name": "Maxime Lefrançois",
-      "email": "maxime.lefrançois@gmail.com",
-      "web": "http://maxime-lefrancois.info"
+      "name": "Patrick Doyle",
+      "email": "pdoyle@topquadrant.com",
+      "web": "http://www.topquadrant.com"
     },
-  "homepage": "https://perfectkb.github.io/yate",
   "scripts": {
     "dev": "gulp serve",
     "build": "gulp",
@@ -51,7 +50,7 @@
     "vinyl-transform": "1.0.0",
     "watchify": "^3.7.0"
   },
-  "bugs": "https://github.com/perfectkb/yate/pulls",
+  "bugs": "https://github.com/TopQuadrant/yate/pulls",
   "keywords": [
     "JavaScript",
     "Turtle",
@@ -60,6 +59,17 @@
     "Linked Data"
   ],
   "maintainers": [
+   {
+     "name" : "Patrick Doyle",
+     "email": "pdoyle@topquadrant.com"
+   }
+  ],
+  "contributors": [
+    {
+      "name": "Pablo Menéndez",
+      "email": "pabloyo97@hotmail.com",
+      "web": "https://mistermboy.github.io/"
+    },
     {
       "name": "Laurens Rietveld",
       "email": "laurens.rietveld@gmail.com",
@@ -71,16 +81,9 @@
       "web": "http://maxime-lefrancois.info"
     }
   ],
-  "contributors": [
-    {
-      "name": "Pablo Menéndez",
-      "email": "pabloyo97@hotmail.com",
-      "web": "https://mistermboy.github.io/"
-    }
-  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/perfectkb/yate.git"
+    "url": "https://github.com/TopQuadrant/yate.git"
   },
   "dependencies": {
     "clipboard": "^1.7.1",
