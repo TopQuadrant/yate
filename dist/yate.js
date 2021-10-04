@@ -5509,9 +5509,9 @@ module.exports = {
 };
 },{}],41:[function(require,module,exports){
 module.exports={
-  "name": "TQ-yate",
+  "name": "tq-yate",
   "description": "TQ-yate - forked from YATE",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "main": "src/main.js",
   "license": "MIT",
   "author": {
