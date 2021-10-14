@@ -561,12 +561,12 @@ CodeMirror.defineMode("rdf11turtle", function(config, parserConfig) {
     SINGLE_QUOTE: {
       CAT: "STRING_LITERAL_LONG_SINGLE_QUOTE",
       QUOTES: "'''",
-      CONTENTS: "(('|'')?([^'\\\\]|" + ECHAR + "|" + unicode + "))*"
+      CONTENTS: "(('|'')?(([^'\\\\]|" + ECHAR + "|" + unicode + ")|$))*"
     },
     QUOTE: {
       CAT: "STRING_LITERAL_LONG_QUOTE",
       QUOTES: '"""',
-      CONTENTS: '(("|"")?([^"\\\\]|' + ECHAR + "|" + unicode + "))*"
+      CONTENTS: '(("|"")?(([^"\\\\]|' + ECHAR + "|" + unicode + ")|$))*"
     }
   };
   for (var key in STRING_LITERAL_LONG) {
@@ -5511,7 +5511,7 @@ module.exports = {
 module.exports={
   "name": "tq-yate",
   "description": "TQ-yate - forked from YATE",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "main": "src/main.js",
   "license": "MIT",
   "author": {

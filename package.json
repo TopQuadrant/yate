@@ -1,7 +1,7 @@
 {
   "name": "tq-yate",
   "description": "TQ-yate - forked from YATE",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "main": "src/main.js",
   "license": "MIT",
   "author": {
