@@ -3,11 +3,11 @@ var gulp = require("gulp"),
   paths = require("./paths.js"),
   connect = require("gulp-connect"),
   sourcemaps = require("gulp-sourcemaps");
-sass = require("gulp-sass"), autoprefixer = require("gulp-autoprefixer"), rename = require(
+sass = require("gulp-sass")(require("sass")), autoprefixer = require("gulp-autoprefixer"), rename = require(
   "gulp-rename"
 ), notify = require("gulp-notify"), minifyCSS = require("gulp-cssnano");
 
-gulp.task("makeCss", function() {
+gulp.task("makeCss", async function() {
   return gulp
     .src(paths.style)
     .pipe(sass())
@@ -45,7 +45,7 @@ var cssDeps = [
   "./node_modules/codemirror/addon/hint/show-hint.css",
   "./node_modules/codemirror/addon/hint/dialog.css"
 ];
-gulp.task("copyCssDeps", function() {
+gulp.task("copyCssDeps",async function() {
   return gulp
     .src(cssDeps)
     .pipe(

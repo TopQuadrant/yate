@@ -15,9 +15,9 @@ var gulp = require("gulp"),
   notify = require("gulp-notify"),
   sourcemaps = require("gulp-sourcemaps");
 
-gulp.task("browserify", function() {
+gulp.task("browserify", async function() {
   return browserify({ entries: ["./src/entry.js"], standalone: "YATE", debug: true })
-    .transform({ global: true }, optionalShim)
+    // .transform({ global: true }, optionalShim)
     .exclude("jquery")
     .exclude("codemirror")
     .exclude("../../lib/codemirror")
@@ -25,7 +25,9 @@ gulp.task("browserify", function() {
     .pipe(exorcist(paths.bundleDir + "/" + paths.bundleFileName + ".js.map"))
     .pipe(source(paths.bundleFileName + ".js"))
     .pipe(gulp.dest(paths.bundleDir))
-    .pipe(rename(paths.bundleFileName + ".min.js"))
+    .pipe(rename({
+      suffix: '.min',
+     }))
     .pipe(buffer())
     .pipe(
       sourcemaps.init({
@@ -43,10 +45,17 @@ gulp.task("browserify", function() {
       })
     )
     .pipe(sourcemaps.write("./"))
-    .pipe(gulp.dest(paths.bundleDir));
+    .pipe(gulp.dest(paths.bundleDir))
+    .on(
+      "error",
+      notify.onError(function(error) {
+        return error.message;
+      })
+    )
+    ;
 });
 
-gulp.task("browserifyWithDeps", function() {
+gulp.task("browserifyWithDeps", async function() {
   var bundler = browserify({ entries: ["./src/entry.js"], standalone: "YATE", debug: true });
 
   return bundler
@@ -54,7 +63,9 @@ gulp.task("browserifyWithDeps", function() {
     .pipe(exorcist(paths.bundleDir + "/" + paths.bundleFileName + ".bundled.js.map"))
     .pipe(source(paths.bundleFileName + ".bundled.js"))
     .pipe(gulp.dest(paths.bundleDir))
-    .pipe(rename(paths.bundleFileName + ".bundled.min.js"))
+    .pipe(rename({
+      suffix: '.min',
+     }))
     .pipe(buffer())
     .pipe(
       sourcemaps.init({
@@ -79,7 +90,7 @@ gulp.task("browserifyWithDeps", function() {
 /**
  * Faster, because we don't minify, and include source maps in js file (notice we store it with .min.js extension, so we don't have to change the index.html file for debugging)
  */
-gulp.task("browserifyForDebug", function() {
+gulp.task("browserifyForDebug", async function() {
   var bundler = browserify({ entries: ["./src/entry.js"], standalone: "YATE", debug: true });
 
   return bundler

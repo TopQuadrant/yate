@@ -4,11 +4,11 @@ var gulp = require("gulp"),
   source = require("vinyl-source-stream"),
   embedlr = require("gulp-embedlr"),
   minifyCSS = require("gulp-cssnano");
-uglify = require("gulp-uglify"), sass = require("gulp-sass"), buffer = require("vinyl-buffer"), concat = require(
+uglify = require("gulp-uglify"), sass = require("gulp-sass")(require("sass")), buffer = require("vinyl-buffer"), concat = require(
   "gulp-concat"
 );
 
-gulp.task("makeMainPageJs", function() {
+gulp.task("makeMainPageJs", async function() {
   return gulp.src("./doc/*.js").pipe(jsValidate()).on("finish", function() {
     browserify({ entries: ["./doc/main.js"], debug: true })
       .bundle()
@@ -18,7 +18,7 @@ gulp.task("makeMainPageJs", function() {
       .pipe(gulp.dest("doc"));
   });
 });
-gulp.task("makeMainPageCss", function() {
+gulp.task("makeMainPageCss", async function() {
   return gulp
     .src(["./doc/main.scss"])
     .pipe(sass())
